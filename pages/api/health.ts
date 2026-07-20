@@ -1,8 +1,10 @@
-import type { NextApiRequest, NextApiResponse } from 'next';
-import { connectDB, getDBStatus, DBStatus } from '@/lib/backend';
+import type { NextApiRequest, NextApiResponse } from "next";
+import { connectDB, getDBStatus, DBStatus } from "@/lib/backend";
+export { default as connectDB } from './dbConnect';
+
 
 interface HealthResponse {
-  status: 'ok' | 'error';
+  status: "ok" | "error";
   timestamp: string;
   database: DBStatus;
   message?: string;
@@ -29,12 +31,12 @@ interface HealthResponse {
  */
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<HealthResponse>
+  res: NextApiResponse<HealthResponse>,
 ) {
-  if (req.method !== 'GET') {
-    res.setHeader('Allow', ['GET']);
+  if (req.method !== "GET") {
+    res.setHeader("Allow", ["GET"]);
     return res.status(405).json({
-      status: 'error',
+      status: "error",
       timestamp: new Date().toISOString(),
       database: getDBStatus(),
       message: `Method ${req.method} Not Allowed`,
@@ -47,18 +49,18 @@ export default async function handler(
     const dbStatus = getDBStatus();
 
     return res.status(200).json({
-      status: 'ok',
+      status: "ok",
       timestamp: new Date().toISOString(),
       database: dbStatus,
     });
   } catch (error: any) {
-    console.error('[Health Check] MongoDB connection failed:', error);
+    console.error("[Health Check] MongoDB connection failed:", error);
 
     return res.status(503).json({
-      status: 'error',
+      status: "error",
       timestamp: new Date().toISOString(),
       database: getDBStatus(),
-      message: error?.message ?? 'Could not connect to MongoDB',
+      message: error?.message ?? "Could not connect to MongoDB",
     });
   }
 }

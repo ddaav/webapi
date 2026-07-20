@@ -1,8 +1,8 @@
-import type { NextApiRequest, NextApiResponse } from 'next';
-import dbConnect from '../../../lib/dbConnect';
-import User from '../../../models/User';
-import { RegisterInputSchema } from '../../../types/auth';
-import bcrypt from 'bcryptjs';
+import type { NextApiRequest, NextApiResponse } from "next";
+import dbConnect from "../../../lib/backend/dbConnect";
+import User from "../../../lib/backend/models/User";
+import { RegisterInputSchema } from "../../../types/auth";
+import bcrypt from "bcryptjs";
 
 type ResponseData = {
   success: boolean;
@@ -11,7 +11,7 @@ type ResponseData = {
     id: string;
     name: string;
     email: string;
-    role?: 'user' | 'admin';
+    role?: "user" | "admin";
     profilePicture?: string | null;
   };
   errors?: any;
@@ -19,11 +19,13 @@ type ResponseData = {
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseData>
+  res: NextApiResponse<ResponseData>,
 ) {
-  if (req.method !== 'POST') {
-    res.setHeader('Allow', ['POST']);
-    return res.status(405).json({ success: false, message: `Method ${req.method} Not Allowed` });
+  if (req.method !== "POST") {
+    res.setHeader("Allow", ["POST"]);
+    return res
+      .status(405)
+      .json({ success: false, message: `Method ${req.method} Not Allowed` });
   }
 
   try {
@@ -33,7 +35,8 @@ export default async function handler(
     // 2. Input Validation (DTO)
     const validationResult = RegisterInputSchema.safeParse(req.body);
     if (!validationResult.success) {
-      const firstError = validationResult.error.issues[0]?.message || 'Validation failed';
+      const firstError =
+        validationResult.error.issues[0]?.message || "Validation failed";
       return res.status(400).json({
         success: false,
         message: firstError,
@@ -48,7 +51,7 @@ export default async function handler(
     if (existingUser) {
       return res.status(400).json({
         success: false,
-        message: 'A user with this email already exists',
+        message: "A user with this email already exists",
       });
     }
 
@@ -65,7 +68,7 @@ export default async function handler(
 
     return res.status(201).json({
       success: true,
-      message: 'User registered successfully',
+      message: "User registered successfully",
       user: {
         id: newUser._id.toString(),
         name: newUser.name,
@@ -75,10 +78,10 @@ export default async function handler(
       },
     });
   } catch (error: any) {
-    console.error('Registration Error:', error);
+    console.error("Registration Error:", error);
     return res.status(500).json({
       success: false,
-      message: 'Internal server error during registration',
+      message: "Internal server error during registration",
     });
   }
 }

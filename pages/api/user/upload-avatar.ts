@@ -1,7 +1,7 @@
-import type { NextApiRequest, NextApiResponse } from 'next';
-import dbConnect from '../../../lib/dbConnect';
-import User from '../../../models/User';
-import jwt from 'jsonwebtoken';
+import type { NextApiRequest, NextApiResponse } from "next";
+import dbConnect from "../../../lib/backend/dbConnect";
+import User from "../../../lib/backend/models/User";
+import jwt from "jsonwebtoken";
 
 type ResponseData = {
   success: boolean;
@@ -16,31 +16,37 @@ type ResponseData = {
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseData>
+  res: NextApiResponse<ResponseData>,
 ) {
-  if (req.method !== 'POST') {
-    res.setHeader('Allow', ['POST']);
-    return res.status(405).json({ success: false, message: `Method ${req.method} Not Allowed` });
+  if (req.method !== "POST") {
+    res.setHeader("Allow", ["POST"]);
+    return res
+      .status(405)
+      .json({ success: false, message: `Method ${req.method} Not Allowed` });
   }
 
   try {
     // 1. Get token from cookies
     const token = req.cookies.token;
     if (!token) {
-      return res.status(401).json({ success: false, message: 'Unauthorized: No token provided' });
+      return res
+        .status(401)
+        .json({ success: false, message: "Unauthorized: No token provided" });
     }
 
     // 2. Verify token
     const jwtSecret = process.env.JWT_SECRET;
     if (!jwtSecret) {
-      throw new Error('JWT_SECRET is not defined');
+      throw new Error("JWT_SECRET is not defined");
     }
 
     let decoded: any;
     try {
       decoded = jwt.verify(token, jwtSecret);
     } catch (err) {
-      return res.status(401).json({ success: false, message: 'Unauthorized: Invalid token' });
+      return res
+        .status(401)
+        .json({ success: false, message: "Unauthorized: Invalid token" });
     }
 
     const userId = decoded.userId;
@@ -48,7 +54,9 @@ export default async function handler(
     // 3. Get profilePicture base64 from body
     const { profilePicture } = req.body;
     if (!profilePicture) {
-      return res.status(400).json({ success: false, message: 'No profile picture data provided' });
+      return res
+        .status(400)
+        .json({ success: false, message: "No profile picture data provided" });
     }
 
     // 4. Connect to Database
@@ -58,16 +66,18 @@ export default async function handler(
     const updatedUser = await User.findByIdAndUpdate(
       userId,
       { profilePicture },
-      { new: true }
+      { new: true },
     );
 
     if (!updatedUser) {
-      return res.status(404).json({ success: false, message: 'User not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
     return res.status(200).json({
       success: true,
-      message: 'Profile picture updated successfully',
+      message: "Profile picture updated successfully",
       user: {
         id: updatedUser._id.toString(),
         name: updatedUser.name,
@@ -76,10 +86,10 @@ export default async function handler(
       },
     });
   } catch (error: any) {
-    console.error('Upload Avatar Error:', error);
+    console.error("Upload Avatar Error:", error);
     return res.status(500).json({
       success: false,
-      message: 'Internal server error during profile picture upload',
+      message: "Internal server error during profile picture upload",
     });
   }
 }

@@ -3,10 +3,9 @@ import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { Heart, Bell, Search, MapPin, Sliders, CheckCircle, Award, Sparkles, Flame, Eye, Landmark, Navigation, Users, Shield, LogOut, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-
-import { Property, getLocalProperties } from '../lib/propertiesData';
-
-
+import NotificationBell from '@/components/NotificationBell';
+import { formatPriceNPR } from '@/lib/formatPrice';
+import { Property } from '../lib/propertiesData';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -30,18 +29,22 @@ export default function DashboardPage() {
   const [properties, setProperties] = useState<Property[]>([]);
   const [filteredProperties, setFilteredProperties] = useState<Property[]>([]);
 
+  // Fetch real properties from the database
   useEffect(() => {
-    const loaded = getLocalProperties();
-    setProperties(loaded);
-    setFilteredProperties(loaded);
+    const fetchProperties = async () => {
+      try {
+        const res = await fetch('/api/properties');
+        const data = await res.json();
+        if (data.success) {
+          setProperties(data.properties);
+          setFilteredProperties(data.properties);
+        }
+      } catch (err) {
+        console.error('Failed to fetch properties:', err);
+      }
+    };
+    fetchProperties();
   }, []);
-
-  // Redirect if not authenticated
-  useEffect(() => {
-    if (!loading && !user) {
-      router.replace('/login');
-    }
-  }, [user, loading, router]);
 
   // Close user menu when clicking outside
   useEffect(() => {
@@ -67,26 +70,17 @@ export default function DashboardPage() {
   useEffect(() => {
     let result = properties;
 
-    // Filter by type
     if (selectedType) {
       result = result.filter(p => p.type === selectedType);
     }
 
-    // Filter by Price (NPR Millions)
     result = result.filter(p => p.price <= maxPrice * 1000000);
 
-    // Filter by Location search
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       result = result.filter(p => p.location.toLowerCase().includes(q) || p.title.toLowerCase().includes(q));
     }
 
-    // Filter by AI Match Score (e.g. only 90% or higher if toggled)
-    if (aiMatchOnly) {
-      result = result.filter(p => p.matchScore >= 90);
-    }
-
-    // Filter by Amenities
     if (amenities.parking) {
       result = result.filter(p => p.parking);
     }
@@ -101,7 +95,7 @@ export default function DashboardPage() {
     }
 
     setFilteredProperties(result);
-  }, [selectedType, maxPrice, searchQuery, aiMatchOnly, amenities]);
+  }, [selectedType, maxPrice, searchQuery, amenities, properties]);
 
   const handleResetFilters = () => {
     setSearchQuery('Kathmandu, Nepal');
@@ -130,7 +124,7 @@ export default function DashboardPage() {
     }));
   };
 
-  if (loading || !user) {
+  if (loading) {
     return (
       <div style={{ display: 'flex', minHeight: '100vh', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
         <div style={{ color: '#64748b', fontWeight: 600 }}>Loading Dashboard...</div>
@@ -145,11 +139,11 @@ export default function DashboardPage() {
         <div className="logo">
           Gharpurja Nepal
         </div>
-        <nav className="nav-links">
+        <nav className="nav-links"{...user && <Link href="/my-listings" className="nav-link">My Listings</Link>}>
           <Link href="/dashboard" className="nav-link active">Properties</Link>
-          <a href="#" className="nav-link">Valuation</a>
-          <a href="#" className="nav-link">Insights</a>
-          <a href="#" className="nav-link">Help</a>
+          <Link href="/valuation" className="nav-link">Valuation</Link>
+          <Link href="/insights" className="nav-link">Insights</Link>
+          <Link href="/help" className="nav-link">Help</Link>
           {user?.role === 'admin' && (
             <Link href="/admin/users" className="nav-link" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
               <Shield size={14} /> Admin
@@ -157,70 +151,75 @@ export default function DashboardPage() {
           )}
         </nav>
         <div className="nav-actions">
-          <button className="nav-icon-btn"><Heart size={20} /></button>
-          <button className="nav-icon-btn"><Bell size={20} /></button>
-          <Link href="/properties/add" className="post-property-btn" style={{ textDecoration: 'none' }}>
+          {user && <NotificationBell />}
+          <Link href={user ? "/properties/add" : "/login"} className="post-property-btn" style={{ textDecoration: 'none' }}>
             Post Property
           </Link>
-          <div ref={userMenuRef} style={{ position: 'relative' }}>
-            <button
-              onClick={() => setShowUserMenu(prev => !prev)}
-              className="avatar-btn"
-              style={{ background: 'none', border: '2px solid var(--border)', padding: 0 }}
-            >
-              {user.profilePicture ? (
-                <img src={user.profilePicture} alt={`${user.name} profile`} />
-              ) : (
-                <div className="profile-avatar-placeholder-nav">
-                  {getInitials(user.name)}
-                </div>
-              )}
-            </button>
-            {showUserMenu && (
-              <div style={{
-                position: 'absolute',
-                top: 'calc(100% + 8px)',
-                right: 0,
-                background: '#ffffff',
-                border: '1px solid var(--border)',
-                borderRadius: '12px',
-                boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-                minWidth: '180px',
-                zIndex: 100,
-                overflow: 'hidden',
-              }}>
-                <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)' }}>
-                  <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#1e293b' }}>{user.name}</div>
-                  <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '2px' }}>{user.email}</div>
-                </div>
-                <Link
-                  href="/profile"
-                  onClick={() => setShowUserMenu(false)}
-                  style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', color: '#334155', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 500, transition: 'background 0.15s' }}
-                  className="user-menu-item"
-                >
-                  <User size={15} /> My Profile
-                </Link>
-                {user.role === 'admin' && (
+          {user ? (
+            <div ref={userMenuRef} style={{ position: 'relative' }}>
+              <button
+                onClick={() => setShowUserMenu(prev => !prev)}
+                className="avatar-btn"
+                style={{ background: 'none', border: '2px solid var(--border)', padding: 0 }}
+              >
+                {user.profilePicture ? (
+                  <img src={user.profilePicture} alt={`${user.name} profile`} />
+                ) : (
+                  <div className="profile-avatar-placeholder-nav">
+                    {getInitials(user.name)}
+                  </div>
+                )}
+              </button>
+              {showUserMenu && (
+                <div style={{
+                  position: 'absolute',
+                  top: 'calc(100% + 8px)',
+                  right: 0,
+                  background: '#ffffff',
+                  border: '1px solid var(--border)',
+                  borderRadius: '12px',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                  minWidth: '180px',
+                  zIndex: 100,
+                  overflow: 'hidden',
+                }}>
+                  <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)' }}>
+                    <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#1e293b' }}>{user.name}</div>
+                    <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '2px' }}>{user.email}</div>
+                  </div>
                   <Link
-                    href="/admin/users"
+                    href="/profile"
                     onClick={() => setShowUserMenu(false)}
                     style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', color: '#334155', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 500, transition: 'background 0.15s' }}
                     className="user-menu-item"
                   >
-                    <Shield size={15} /> Manage Users
+                    <User size={15} /> My Profile
                   </Link>
-                )}
-                <button
-                  onClick={() => { setShowUserMenu(false); logout(); }}
-                  style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '10px 16px', background: 'none', border: 'none', color: '#ef4444', fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer', textAlign: 'left', borderTop: '1px solid var(--border)', transition: 'background 0.15s' }}
-                  className="user-menu-item"
-                >
-                  <LogOut size={15} /> Logout
-                </button>
-              </div>
-            )}
-          </div>
+                  {user.role === 'admin' && (
+                    <Link
+                      href="/admin/users"
+                      onClick={() => setShowUserMenu(false)}
+                      style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', color: '#334155', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 500, transition: 'background 0.15s' }}
+                      className="user-menu-item"
+                    >
+                      <Shield size={15} /> Manage Users
+                    </Link>
+                  )}
+                  <button
+                    onClick={() => { setShowUserMenu(false); logout(); }}
+                    style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '10px 16px', background: 'none', border: 'none', color: '#ef4444', fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer', textAlign: 'left', borderTop: '1px solid var(--border)', transition: 'background 0.15s' }}
+                    className="user-menu-item"
+                  >
+                    <LogOut size={15} /> Logout
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <Link href="/login" className="post-property-btn" style={{ textDecoration: 'none', background: '#1e293b' }}>
+              Log In
+            </Link>
+          )}
         </div>
       </header>
 
@@ -280,20 +279,6 @@ export default function DashboardPage() {
             <p style={{ margin: 0, fontSize: '0.82rem', color: '#475569' }}>
               Most deals in Kathmandu closing 5–8% below listing. Set range to 35M for highest liquidity.
             </p>
-          </div>
-
-          <div className="sidebar-group">
-            <div className="toggle-group">
-              <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#334155' }}>AI Match Score (90%+)</span>
-              <label className="toggle-switch">
-                <input
-                  type="checkbox"
-                  checked={aiMatchOnly}
-                  onChange={(e) => setAiMatchOnly(e.target.checked)}
-                />
-                <span className="toggle-slider"></span>
-              </label>
-            </div>
           </div>
 
           <div className="sidebar-group">
@@ -377,13 +362,13 @@ export default function DashboardPage() {
           {/* Properties Grid */}
           {filteredProperties.length > 0 ? (
             <div className="property-grid">
-              {filteredProperties.map((property) => (
-                <div key={property.id} className="property-card">
+              {filteredProperties.map((property: any) => (
+                <div key={property._id || property.id} className="property-card">
                   {/* Card Image and Badges */}
                   <div className="property-card-image">
-                    <img src={property.image} alt={property.title} />
+                    <img src={property.images?.[0] || property.image} alt={property.title} />
                     <div className="card-badges">
-                      {property.badges.map((badge, index) => (
+                      {property.badges?.map((badge: any, index: number) => (
                         <span
                           key={index}
                           className={badge.type === 'sale' ? 'badge-for-sale' : 'badge-ai-verified'}
@@ -394,18 +379,17 @@ export default function DashboardPage() {
                       ))}
                     </div>
                     <button
-                      className={`card-heart-btn ${likedProperties[property.id] ? 'liked' : ''}`}
-                      onClick={() => toggleLike(property.id)}
+                      className={`card-heart-btn ${likedProperties[property._id || property.id] ? 'liked' : ''}`}
+                      onClick={() => toggleLike(property._id || property.id)}
                     >
-                      <Heart size={18} fill={likedProperties[property.id] ? 'currentColor' : 'none'} />
+                      <Heart size={18} fill={likedProperties[property._id || property.id] ? 'currentColor' : 'none'} />
                     </button>
                   </div>
 
                   {/* Card Details */}
                   <div className="property-card-details">
                     <div className="card-price-row">
-                      <div className="card-price">{property.priceFormatted}</div>
-                      <div className="card-match-badge">{property.matchScore}% AI Match</div>
+                      <div className="card-price">{formatPriceNPR(property.price)}</div>
                     </div>
                     <h3 className="card-title">{property.title}</h3>
                     <div className="card-location">
@@ -419,7 +403,7 @@ export default function DashboardPage() {
                       <div className="card-spec-item">📐 {property.sqft} sq.ft</div>
                     </div>
 
-                    <Link href={`/properties/${property.id}`} className="btn-card-action" style={{ display: 'block', textAlign: 'center', textDecoration: 'none', lineHeight: '2.5' }}>
+                    <Link href={`/properties/${property._id || property.id}`} className="btn-card-action" style={{ display: 'block', textAlign: 'center', textDecoration: 'none', lineHeight: '2.5' }}>
                       View Details
                     </Link>
                   </div>

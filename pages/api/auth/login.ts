@@ -1,9 +1,9 @@
-import type { NextApiRequest, NextApiResponse } from 'next';
-import dbConnect from '../../../lib/dbConnect';
-import User from '../../../models/User';
-import { LoginInputSchema } from '../../../types/auth';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import type { NextApiRequest, NextApiResponse } from "next";
+import dbConnect from "../../../lib/backend/dbConnect";
+import User from "../../../lib/backend/models/User";
+import { LoginInputSchema } from "../../../types/auth";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 
 type ResponseData = {
   success: boolean;
@@ -13,7 +13,7 @@ type ResponseData = {
     id: string;
     name: string;
     email: string;
-    role?: 'user' | 'admin';
+    role?: "user" | "admin";
     profilePicture?: string | null;
   };
   errors?: any;
@@ -21,11 +21,13 @@ type ResponseData = {
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseData>
+  res: NextApiResponse<ResponseData>,
 ) {
-  if (req.method !== 'POST') {
-    res.setHeader('Allow', ['POST']);
-    return res.status(405).json({ success: false, message: `Method ${req.method} Not Allowed` });
+  if (req.method !== "POST") {
+    res.setHeader("Allow", ["POST"]);
+    return res
+      .status(405)
+      .json({ success: false, message: `Method ${req.method} Not Allowed` });
   }
 
   try {
@@ -35,7 +37,8 @@ export default async function handler(
     // 2. Input Validation (DTO)
     const validationResult = LoginInputSchema.safeParse(req.body);
     if (!validationResult.success) {
-      const firstError = validationResult.error.issues[0]?.message || 'Validation failed';
+      const firstError =
+        validationResult.error.issues[0]?.message || "Validation failed";
       return res.status(400).json({
         success: false,
         message: firstError,
@@ -46,11 +49,11 @@ export default async function handler(
     const { email, password } = validationResult.data;
 
     // 3. Find User (explicitly select password field since select is false in schema)
-    const user = await User.findOne({ email }).select('+password');
+    const user = await User.findOne({ email }).select("+password");
     if (!user || !user.password) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password',
+        message: "Invalid email or password",
       });
     }
 
@@ -59,25 +62,25 @@ export default async function handler(
     if (!isMatch) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password',
+        message: "Invalid email or password",
       });
     }
 
     // 5. JWT Generation
     const jwtSecret = process.env.JWT_SECRET;
     if (!jwtSecret) {
-      throw new Error('JWT_SECRET is not defined in environment variables');
+      throw new Error("JWT_SECRET is not defined in environment variables");
     }
 
     const token = jwt.sign(
       { userId: user._id.toString(), email: user.email },
       jwtSecret,
-      { expiresIn: '1d' }
+      { expiresIn: "1d" },
     );
 
     return res.status(200).json({
       success: true,
-      message: 'Login successful',
+      message: "Login successful",
       token,
       user: {
         id: user._id.toString(),
@@ -88,10 +91,10 @@ export default async function handler(
       },
     });
   } catch (error: any) {
-    console.error('Login Error:', error);
+    console.error("Login Error:", error);
     return res.status(500).json({
       success: false,
-      message: 'Internal server error during login',
+      message: "Internal server error during login",
     });
   }
 }

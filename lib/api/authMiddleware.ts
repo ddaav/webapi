@@ -1,7 +1,7 @@
-import type { NextApiRequest, NextApiResponse } from 'next';
-import jwt from 'jsonwebtoken';
-import dbConnect from '../dbConnect';
-import User, { IUserDocument } from '../../models/User';
+import type { NextApiRequest, NextApiResponse } from "next";
+import jwt from "jsonwebtoken";
+import dbConnect from "../backend/dbConnect";
+import User, { IUserDocument } from "../backend/models/User";
 
 export interface AuthenticatedRequest extends NextApiRequest {
   user: IUserDocument;
@@ -9,7 +9,7 @@ export interface AuthenticatedRequest extends NextApiRequest {
 
 export type AuthenticatedHandler<T = any> = (
   req: AuthenticatedRequest,
-  res: NextApiResponse<T>
+  res: NextApiResponse<T>,
 ) => void | Promise<void>;
 
 /**
@@ -24,39 +24,48 @@ export function withAuth<T = any>(handler: AuthenticatedHandler<T>) {
       let token = req.cookies.token;
 
       if (!token && req.headers.authorization) {
-        const parts = req.headers.authorization.split(' ');
-        if (parts.length === 2 && parts[0] === 'Bearer') {
+        const parts = req.headers.authorization.split(" ");
+        if (parts.length === 2 && parts[0] === "Bearer") {
           token = parts[1];
         }
       }
 
       if (!token) {
-        return res.status(401).json({ success: false, message: 'Unauthorized: No token provided' });
+        return res
+          .status(401)
+          .json({ success: false, message: "Unauthorized: No token provided" });
       }
 
       // 2. Verify token
       const jwtSecret = process.env.JWT_SECRET;
       if (!jwtSecret) {
-        throw new Error('JWT_SECRET is not defined in environment variables');
+        throw new Error("JWT_SECRET is not defined in environment variables");
       }
 
       let decoded: any;
       try {
         decoded = jwt.verify(token, jwtSecret);
       } catch (err) {
-        return res.status(401).json({ success: false, message: 'Unauthorized: Invalid token' });
+        return res
+          .status(401)
+          .json({ success: false, message: "Unauthorized: Invalid token" });
       }
 
       const userId = decoded.userId;
       if (!userId) {
-        return res.status(401).json({ success: false, message: 'Unauthorized: Invalid token payload' });
+        return res.status(401).json({
+          success: false,
+          message: "Unauthorized: Invalid token payload",
+        });
       }
 
       // 3. Connect to database and find user
       await dbConnect();
       const user = await User.findById(userId);
       if (!user) {
-        return res.status(404).json({ success: false, message: 'User not found' });
+        return res
+          .status(404)
+          .json({ success: false, message: "User not found" });
       }
 
       // 4. Attach user to request and call the handler
@@ -65,8 +74,11 @@ export function withAuth<T = any>(handler: AuthenticatedHandler<T>) {
 
       return handler(authReq, res);
     } catch (error: any) {
-      console.error('Authentication middleware error:', error);
-      return res.status(500).json({ success: false, message: 'Internal server error during authentication' });
+      console.error("Authentication middleware error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Internal server error during authentication",
+      });
     }
   };
 }
@@ -77,10 +89,11 @@ export function withAuth<T = any>(handler: AuthenticatedHandler<T>) {
  */
 export function withAdminAuth<T = any>(handler: AuthenticatedHandler<T>) {
   return withAuth(async (req, res) => {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ success: false, message: 'Forbidden: Admin access only' });
+    if (req.user.role !== "admin") {
+      return res
+        .status(403)
+        .json({ success: false, message: "Forbidden: Admin access only" });
     }
     return handler(req, res);
   });
 }
-
