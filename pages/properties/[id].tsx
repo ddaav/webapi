@@ -211,6 +211,8 @@ export default function PropertyDetailPage() {
         <div className="logo">Gharpurja Nepal</div>
         <nav className="nav-links">
           <Link href="/dashboard" className="nav-link active">Properties</Link>
+          {user && <Link href="/my-listings" className="nav-link">My Listings</Link>}
+          {user && <Link href="/messages" className="nav-link">Messages</Link>}
           <Link href="/valuation" className="nav-link">Valuation</Link>
           <Link href="/insights" className="nav-link">Insights</Link>
           <Link href="/help" className="nav-link">Help</Link>

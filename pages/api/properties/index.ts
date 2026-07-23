@@ -1,8 +1,9 @@
+import type { NextApiRequest, NextApiResponse } from 'next';
 import { withAuth } from '@/lib/api/authMiddleware';
 import { connectDB } from '@/lib/backend';
 import Property from '@/lib/backend/models/Property';
 
-export default async function handler(req, res) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   await connectDB();
 
   if (req.method === 'GET') {

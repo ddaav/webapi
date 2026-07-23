@@ -15,12 +15,12 @@ export default function DashboardPage() {
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   // Filter States
-  const [searchQuery, setSearchQuery] = useState('Kathmandu, Nepal');
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState<'House' | 'Apartment' | 'Land' | 'Commercial' | null>(null);
-  const [maxPrice, setMaxPrice] = useState<number>(45); // Representing Millions
+  const [maxPrice, setMaxPrice] = useState<number>(500); // Set to max range (500M) by default so no price cap hides properties
   const [aiMatchOnly, setAiMatchOnly] = useState(false);
   const [amenities, setAmenities] = useState({
-    parking: true,
+    parking: false,
     security: false,
     balcony: false,
     waterBackup: false,
@@ -74,11 +74,15 @@ export default function DashboardPage() {
       result = result.filter(p => p.type === selectedType);
     }
 
-    result = result.filter(p => p.price <= maxPrice * 1000000);
+    if (maxPrice < 500) {
+      result = result.filter(p => p.price <= maxPrice * 1000000);
+    }
 
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      result = result.filter(p => p.location.toLowerCase().includes(q) || p.title.toLowerCase().includes(q));
+      result = result.filter(p =>
+        p.location.toLowerCase().includes(q) || p.title.toLowerCase().includes(q)
+      );
     }
 
     if (amenities.parking) {
@@ -98,12 +102,12 @@ export default function DashboardPage() {
   }, [selectedType, maxPrice, searchQuery, amenities, properties]);
 
   const handleResetFilters = () => {
-    setSearchQuery('Kathmandu, Nepal');
+    setSearchQuery('');
     setSelectedType(null);
-    setMaxPrice(45);
+    setMaxPrice(500);
     setAiMatchOnly(false);
     setAmenities({
-      parking: true,
+      parking: false,
       security: false,
       balcony: false,
       waterBackup: false,
@@ -129,6 +133,7 @@ export default function DashboardPage() {
       <div style={{ display: 'flex', minHeight: '100vh', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
         <div style={{ color: '#64748b', fontWeight: 600 }}>Loading Dashboard...</div>
       </div>
+
     );
   }
 
@@ -139,8 +144,10 @@ export default function DashboardPage() {
         <div className="logo">
           Gharpurja Nepal
         </div>
-        <nav className="nav-links"{...user && <Link href="/my-listings" className="nav-link">My Listings</Link>}>
+        <nav className="nav-links">
           <Link href="/dashboard" className="nav-link active">Properties</Link>
+          {user && <Link href="/my-listings" className="nav-link">My Listings</Link>}
+          {user && <Link href="/messages" className="nav-link">Messages</Link>}
           <Link href="/valuation" className="nav-link">Valuation</Link>
           <Link href="/insights" className="nav-link">Insights</Link>
           <Link href="/help" className="nav-link">Help</Link>

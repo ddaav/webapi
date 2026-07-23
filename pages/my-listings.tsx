@@ -198,10 +198,11 @@ export default function MyListingsPage() {
         <div className="logo">Gharpurja Nepal</div>
         <nav className="nav-links">
           <Link href="/dashboard" className="nav-link">Properties</Link>
+          <Link href="/my-listings" className="nav-link active">My Listings</Link>
+          <Link href="/messages" className="nav-link">Messages</Link>
           <Link href="/valuation" className="nav-link">Valuation</Link>
           <Link href="/insights" className="nav-link">Insights</Link>
           <Link href="/help" className="nav-link">Help</Link>
-          <Link href="/my-listings" className="nav-link active">My Listings</Link>
           {user?.role === 'admin' && (
             <Link href="/admin/users" className="nav-link" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
               <Shield size={14} /> Admin

@@ -44,4 +44,30 @@ async function dbConnect() {
   return cached.conn;
 }
 
+export interface DBStatus {
+  state: string;
+  stateCode: number;
+  host: string;
+  dbName: string;
+  isConnected: boolean;
+}
+
+export function getDBStatus(): DBStatus {
+  const stateCode = mongoose.connection.readyState;
+  const states: Record<number, string> = {
+    0: 'disconnected',
+    1: 'connected',
+    2: 'connecting',
+    3: 'disconnecting',
+  };
+
+  return {
+    state: states[stateCode] || 'unknown',
+    stateCode,
+    host: mongoose.connection.host || '',
+    dbName: mongoose.connection.name || '',
+    isConnected: stateCode === 1,
+  };
+}
+
 export default dbConnect;

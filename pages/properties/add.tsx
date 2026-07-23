@@ -30,7 +30,7 @@ export default function AddPropertyPage() {
   const [price, setPrice] = useState<number | "">("");
   const [location, setLocation] = useState("");
   const [city, setCity] = useState<"Kathmandu" | "Lalitpur">("Kathmandu");
-  const [type, setType] = useState
+  const [type, setType] = useState<
     "House" | "Apartment" | "Land" | "Commercial"
   >("House");
   const [beds, setBeds] = useState<number | "">("");

@@ -16,6 +16,7 @@ export interface IProperty {
   balcony?: boolean;
   waterBackup?: boolean;
   images: string[];
+  badges?: string[];
   isActive: boolean;
 }
 

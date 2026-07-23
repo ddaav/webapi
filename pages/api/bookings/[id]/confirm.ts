@@ -1,7 +1,7 @@
 import { withAuth } from "@/lib/api/authMiddleware";
 import { connectDB } from "@/lib/backend";
-import Booking from "@/backend/models/Booking";
-import Property from "@/backend/models/Property";
+import Booking from "@/lib/backend/models/Booking";
+import Property from "@/lib/backend/models/Property";
 import { createNotification } from "@/lib/backend/services/createNotification";
 
 export default withAuth(async (req, res) => {

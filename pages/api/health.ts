@@ -1,7 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { connectDB, getDBStatus, DBStatus } from "@/lib/backend";
-export { default as connectDB } from './dbConnect';
-
 
 interface HealthResponse {
   status: "ok" | "error";

@@ -1,7 +1,7 @@
 import { withAuth } from "@/lib/api/authMiddleware";
 import { connectDB } from "@/lib/backend";
-import Message from "@/backend/models/Message";
-import Property from "@/backend/models/Property";
+import Message from "@/lib/backend/models/Message";
+import Property from "@/lib/backend/models/Property";
 import { createNotification } from "@/lib/backend/services/createNotification";
 
 export default withAuth(async (req, res) => {

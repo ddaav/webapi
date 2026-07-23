@@ -2,6 +2,7 @@ import { withAuth } from "@/lib/api/authMiddleware";
 import { connectDB } from "@/lib/backend";
 import Booking from "@/lib/backend/models/Booking";
 import Property from "@/lib/backend/models/Property";
+import Message from "@/lib/backend/models/Message";
 import { createNotification } from "@/lib/backend/services/createNotification";
 
 export default withAuth(async (req, res) => {
@@ -24,6 +25,17 @@ export default withAuth(async (req, res) => {
       status: "pending",
       moveInDate,
       message,
+    });
+
+    const bookingMsgText = message && message.trim()
+      ? message.trim()
+      : `Hello! I have requested to book this property${moveInDate ? ` (Target move-in date: ${new Date(moveInDate).toLocaleDateString()})` : ''}.`;
+
+    await Message.create({
+      propertyId: property._id,
+      senderId: req.user._id,
+      recipientId: property.ownerId,
+      text: bookingMsgText,
     });
 
     await createNotification({

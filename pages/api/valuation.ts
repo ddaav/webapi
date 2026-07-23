@@ -20,10 +20,12 @@ export default withAuth(async (req, res) => {
     });
   }
 
+  const propertyType = String(type);
+
   const filter: Record<string, any> = {
     isActive: true,
     city: new RegExp(String(city), "i"),
-    type,
+    type: propertyType,
     sqft: { $gt: 0 },
   };
 
@@ -39,12 +41,13 @@ export default withAuth(async (req, res) => {
 
   if (comparables.length < 2) {
     // Not enough exact matches — widen search to just city + type
-    const wider = await Property.find({
+    const widerFilter: Record<string, any> = {
       isActive: true,
       city: new RegExp(String(city), "i"),
-      type,
+      type: propertyType,
       sqft: { $gt: 0 },
-    })
+    };
+    const wider = await Property.find(widerFilter)
       .select("price sqft")
       .lean();
 
